@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import de.vaadinbuch.mvxdemo.AbstractPresenter;
+import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
 import de.vaadinbuch.mvxdemo.login.LoginComponent;
 import de.vaadinbuch.mvxdemo.login.LoginModel;
 import de.vaadinbuch.mvxdemo.login.LoginView;
@@ -63,6 +64,11 @@ public class LoginComponentImpl extends AbstractPresenter<LoginModel, LoginView>
 	@Override
 	public void addLoginFailedHandler(LoginFailedHandler handler) {
 		this.failedHandlerList = this.addHandlerToList(handler, this.failedHandlerList);
+	}
+
+	@Override
+	public <T> T getViewAs(Class<T> type) throws UnsupportedViewTypeException {
+		return this.view.getViewAs(type);
 	}
 
 	private void updateLoginButtonState(String userId, String password) {

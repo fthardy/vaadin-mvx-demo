@@ -1,5 +1,6 @@
 package de.vaadinbuch.mvxdemo.login.impl.view;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import org.junit.Before;
@@ -18,7 +19,9 @@ import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.PasswordField;
 import com.vaadin.ui.TextField;
+import com.vaadin.ui.VerticalLayout;
 
+import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
 import de.vaadinbuch.mvxdemo.login.LoginView;
 
 @RunWith(value = MockitoJUnitRunner.class)
@@ -130,5 +133,20 @@ public class VaadinLoginViewLogicTest {
 		this.loginButtonClickListener.buttonClick(new ClickEvent(Mockito.mock(Component.class)));
 
 		Mockito.verify(this.presenterMock).onLogin();
+	}
+
+	@Test(expected = UnsupportedViewTypeException.class)
+	public void shouldThrowExceptionOnWrongViewtype() {
+		this.viewLogic.getViewAs(String.class);
+	}
+
+	@Test
+	public void shouldReturnViewAsVaadinComponent() {
+		assertNotNull(this.viewLogic.getViewAs(Component.class));
+	}
+
+	@Test
+	public void shouldReturnViewAsVaadinVerticalLayout() {
+		assertNotNull(this.viewLogic.getViewAs(VerticalLayout.class));
 	}
 }

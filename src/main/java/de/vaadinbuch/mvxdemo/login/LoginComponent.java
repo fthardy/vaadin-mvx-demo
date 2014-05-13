@@ -1,5 +1,7 @@
 package de.vaadinbuch.mvxdemo.login;
 
+import de.vaadinbuch.mvxdemo.ViewAccessor;
+
 /**
  * Definiert die öffentliche Schnittstelle der Anmeldekomponente.<br/>
  * Nutzer der Anmeldekomponente können über dieses Interface auf die Komponente
@@ -7,7 +9,7 @@ package de.vaadinbuch.mvxdemo.login;
  * 
  * @author Frank Hardy
  */
-public interface LoginComponent {
+public interface LoginComponent extends ViewAccessor {
 
 	/**
 	 * Ein Callbackinterface, um auf eine erfolgreiche Anmeldung reagieren zu

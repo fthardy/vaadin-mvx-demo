@@ -5,6 +5,7 @@ import com.vaadin.event.FieldEvents.TextChangeListener;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 
+import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
 import de.vaadinbuch.mvxdemo.login.LoginView;
 
 /**
@@ -68,6 +69,15 @@ public class VaadinLoginViewLogic implements LoginView {
 	@Override
 	public void setPresenter(LoginView.Presenter presenter) {
 		this.presenter = presenter;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T> T getViewAs(Class<T> type) throws UnsupportedViewTypeException {
+		if (type.isAssignableFrom(this.view.getClass())) {
+			return (T) this.view;
+		}
+		throw new UnsupportedViewTypeException("Der übergebene Viewtyp wird nicht unterstützt: " + type.getName());
 	}
 
 	@SuppressWarnings("serial")

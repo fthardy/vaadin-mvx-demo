@@ -1,5 +1,6 @@
 package de.vaadinbuch.mvxdemo;
 
+import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;
 
 import com.vaadin.annotations.VaadinServletConfiguration;
@@ -12,9 +13,12 @@ import com.vaadin.server.VaadinServlet;
  * @author Frank Hardy
  */
 @SuppressWarnings("serial")
-@WebServlet(value = "/*", asyncSupported = true)
+@WebServlet(//
+value = "/*",//
+asyncSupported = true,//
+initParams = { @WebInitParam(name = "UIProvider", value = "de.vaadinbuch.mvxdemo.LoginAwareUIProvider") })
 @VaadinServletConfiguration(//
-productionMode = false, ui = MvxDemoUI.class, widgetset = "de.vaadinbuch.mvxdemo.MvxDemoWidgetSet")
+productionMode = false, ui = LoginUI.class, widgetset = "de.vaadinbuch.mvxdemo.MvxDemoWidgetSet")
 public class MvxDemoServlet extends VaadinServlet {
 	// aktuell keine Implementierung
 }

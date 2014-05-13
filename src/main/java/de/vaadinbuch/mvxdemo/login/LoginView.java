@@ -1,11 +1,13 @@
 package de.vaadinbuch.mvxdemo.login;
 
+import de.vaadinbuch.mvxdemo.ViewAccessor;
+
 /**
  * Die Interfacedefinition für die View der Anmeldekomponente.
  * 
  * @author Frank Hardy
  */
-public interface LoginView {
+public interface LoginView extends ViewAccessor {
 
 	/**
 	 * Ein Callbackinterface zur Rückmeldung von Ereignissen aus der View zum
