@@ -1,5 +1,7 @@
 package de.vaadinbuch.mvxdemo;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.Theme;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.ui.Alignment;
@@ -12,8 +14,8 @@ import com.vaadin.ui.VerticalLayout;
 import de.vaadinbuch.mvxdemo.domain.ServiceLocator;
 import de.vaadinbuch.mvxdemo.domain.UserService;
 import de.vaadinbuch.mvxdemo.login.LoginComponent;
-import de.vaadinbuch.mvxdemo.login.LoginComponent.LoginFailedHandler;
-import de.vaadinbuch.mvxdemo.login.LoginComponent.LoginSuccessHandler;
+import de.vaadinbuch.mvxdemo.login.event.LoginFailedEvent;
+import de.vaadinbuch.mvxdemo.login.event.LoginSuccessEvent;
 import de.vaadinbuch.mvxdemo.login.impl.LoginComponentImpl;
 import de.vaadinbuch.mvxdemo.login.impl.model.LoginModelImpl;
 import de.vaadinbuch.mvxdemo.login.impl.view.VaadinLoginView;
@@ -27,7 +29,7 @@ import de.vaadinbuch.mvxdemo.login.impl.view.VaadinLoginViewLogic;
  */
 @Theme("mvx-demo")
 @SuppressWarnings("serial")
-public class LoginUI extends UI implements LoginSuccessHandler, LoginFailedHandler {
+public class LoginUI extends UI {
 
 	/**
 	 * Der Schlüssel für das Session-Attribut, das die Benutzerkennung
@@ -35,11 +37,12 @@ public class LoginUI extends UI implements LoginSuccessHandler, LoginFailedHandl
 	 */
 	public static final String LOGIN_USER_ID = "LOGIN_USER_ID";
 
+	protected final EventBus eventBus = new EventBus();
+
 	@Override
 	protected void init(VaadinRequest request) {
 		LoginComponent loginComponent = this.createLoginComponent();
-		loginComponent.addLoginSuccessHandler(this);
-		loginComponent.addLoginFailedHandler(this);
+		this.eventBus.register(this);
 
 		Component loginView = loginComponent.getViewAs(Component.class);
 
@@ -52,20 +55,21 @@ public class LoginUI extends UI implements LoginSuccessHandler, LoginFailedHandl
 		this.setSizeFull();
 	}
 
-	@Override
-	public void onLoginSuccess(String userId) {
-		this.getSession().setAttribute(LOGIN_USER_ID, userId);
+	@Subscribe
+	public void onLoginSuccess(LoginSuccessEvent event) {
+		this.getSession().setAttribute(LOGIN_USER_ID, event.getUserId());
 		this.getPage().reload();
 	}
 
-	@Override
-	public void onLoginFailed() {
+	@Subscribe
+	public void onLoginFailed(LoginFailedEvent event) {
 		Notification.show("Anmeldung fehlgeschlagen!", Type.ERROR_MESSAGE);
 	}
 
 	private LoginComponent createLoginComponent() {
 		LoginComponent loginComponent = new LoginComponentImpl(new LoginModelImpl(ServiceLocator.getInstance()
-				.getService(UserService.class)), new VaadinLoginViewLogic(new VaadinLoginView()));
+				.getService(UserService.class)), new VaadinLoginViewLogic(new VaadinLoginView(), this.eventBus),
+				this.eventBus);
 
 		return loginComponent;
 	}

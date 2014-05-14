@@ -1,14 +1,18 @@
 package de.vaadinbuch.mvxdemo.login.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 
 import de.vaadinbuch.mvxdemo.AbstractPresenter;
 import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
 import de.vaadinbuch.mvxdemo.login.LoginComponent;
 import de.vaadinbuch.mvxdemo.login.LoginModel;
 import de.vaadinbuch.mvxdemo.login.LoginView;
+import de.vaadinbuch.mvxdemo.login.event.LoginFailedEvent;
+import de.vaadinbuch.mvxdemo.login.event.LoginSuccessEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.LoginAttemptEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.PasswordChangeEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
 
 /**
  * Die Implementierung der Anmeldekomponente, die auch gleichzeitig den
@@ -16,54 +20,46 @@ import de.vaadinbuch.mvxdemo.login.LoginView;
  * 
  * @author Frank Hardy
  */
-public class LoginComponentImpl extends AbstractPresenter<LoginModel, LoginView> implements LoginView.Presenter,
-		LoginComponent {
-
-	private List<LoginSuccessHandler> successHandlerList;
-	private List<LoginFailedHandler> failedHandlerList;
+public class LoginComponentImpl extends AbstractPresenter<LoginModel, LoginView> implements LoginComponent {
 
 	/**
-	 * Erzeugt eine neue Instanz der Anmeldekomponente und registriert sich an
-	 * der View.
+	 * Erzeugt eine neue Instanz der Anmeldekomponente.
 	 * 
 	 * @param model
 	 *            das Model für der Komponente.
 	 * @param view
 	 *            die View der Komponente.
+	 * @param eventBus
+	 *            der Eventbus.
 	 */
-	public LoginComponentImpl(LoginModel model, LoginView view) {
-		super(model, view);
-		this.view.setPresenter(this);
+	public LoginComponentImpl(LoginModel model, LoginView view, EventBus eventBus) {
+		super(model, view, eventBus);
 	}
 
-	@Override
-	public void onUserIdChange(String currentUid) {
-		this.updateLoginButtonState(currentUid, this.view.getPassword());
-	}
-
-	@Override
-	public void onPasswordChange(String currentPw) {
-		this.updateLoginButtonState(this.view.getUserId(), currentPw);
-	}
-
-	@Override
-	public void onLogin() {
-		if (this.model.loginUser(this.view.getUserId(), this.view.getPassword())) {
-			this.informSuccessHandler(this.view.getUserId());
-		} else {
-			this.informFailedHandler();
+	@Subscribe
+	public void onUserIdChange(UserIdChangeEvent event) {
+		if (event.getSource() == this.view) {
+			this.updateLoginButtonState(event.getCurrentUserId(), this.view.getPassword());
 		}
-		this.view.reset();
 	}
 
-	@Override
-	public void addLoginSuccessHandler(LoginSuccessHandler handler) {
-		this.successHandlerList = this.addHandlerToList(handler, this.successHandlerList);
+	@Subscribe
+	public void onPasswordChange(PasswordChangeEvent event) {
+		if (event.getSource() == this.view) {
+			this.updateLoginButtonState(this.view.getUserId(), event.getCurrentPassword());
+		}
 	}
 
-	@Override
-	public void addLoginFailedHandler(LoginFailedHandler handler) {
-		this.failedHandlerList = this.addHandlerToList(handler, this.failedHandlerList);
+	@Subscribe
+	public void onLogin(LoginAttemptEvent event) {
+		if (event.getSource() == this.view) {
+			if (this.model.loginUser(this.view.getUserId(), this.view.getPassword())) {
+				this.eventBus.post(new LoginSuccessEvent(this, this.view.getUserId()));
+			} else {
+				this.eventBus.post(new LoginFailedEvent(this));
+			}
+			this.view.reset();
+		}
 	}
 
 	@Override
@@ -76,39 +72,5 @@ public class LoginComponentImpl extends AbstractPresenter<LoginModel, LoginView>
 		boolean passwordHasMinLength = password.length() >= this.model.getMinPasswordLength();
 
 		this.view.setLoginButtonEnabled(userIdHasMinLength && passwordHasMinLength);
-	}
-
-	private <T> List<T> addHandlerToList(T handler, List<T> handlerList) {
-		if (handlerList == null) {
-			handlerList = Collections.synchronizedList(new ArrayList<T>());
-		}
-		if (!handlerList.contains(handler)) {
-			handlerList.add(handler);
-		}
-		return handlerList;
-	}
-
-	private void informSuccessHandler(String userId) {
-		List<LoginSuccessHandler> handlerList;
-		if (this.successHandlerList != null) {
-			synchronized (this.successHandlerList) {
-				handlerList = new ArrayList<LoginSuccessHandler>(this.successHandlerList);
-			}
-			for (LoginSuccessHandler handler : handlerList) {
-				handler.onLoginSuccess(userId);
-			}
-		}
-	}
-
-	private void informFailedHandler() {
-		List<LoginFailedHandler> handlerList;
-		if (this.failedHandlerList != null) {
-			synchronized (this.failedHandlerList) {
-				handlerList = new ArrayList<LoginFailedHandler>(this.failedHandlerList);
-			}
-			for (LoginFailedHandler handler : handlerList) {
-				handler.onLoginFailed();
-			}
-		}
 	}
 }

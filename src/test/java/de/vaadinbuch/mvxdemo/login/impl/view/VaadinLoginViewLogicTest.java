@@ -1,5 +1,6 @@
 package de.vaadinbuch.mvxdemo.login.impl.view;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
@@ -11,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.eventbus.EventBus;
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
 import com.vaadin.ui.Button;
@@ -22,7 +24,9 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
 
 import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
-import de.vaadinbuch.mvxdemo.login.LoginView;
+import de.vaadinbuch.mvxdemo.login.impl.event.LoginAttemptEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.PasswordChangeEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
 
 @RunWith(value = MockitoJUnitRunner.class)
 public class VaadinLoginViewLogicTest {
@@ -36,7 +40,7 @@ public class VaadinLoginViewLogicTest {
 	@Mock
 	private Button loginButtonMock;
 	@Mock
-	private LoginView.Presenter presenterMock;
+	private EventBus eventBusMock;
 
 	private VaadinLoginViewLogic viewLogic;
 
@@ -51,8 +55,7 @@ public class VaadinLoginViewLogicTest {
 		Mockito.when(this.viewMock.getPasswordField()).thenReturn(this.passwordFieldMock);
 		Mockito.when(this.viewMock.getLoginButton()).thenReturn(this.loginButtonMock);
 
-		this.viewLogic = new VaadinLoginViewLogic(this.viewMock);
-		this.viewLogic.setPresenter(this.presenterMock);
+		this.viewLogic = new VaadinLoginViewLogic(this.viewMock, this.eventBusMock);
 
 		ArgumentCaptor<TextChangeListener> userIdTclCaptor = ArgumentCaptor.forClass(TextChangeListener.class);
 		Mockito.verify(this.userIdFieldMock).addTextChangeListener(userIdTclCaptor.capture());
@@ -97,7 +100,7 @@ public class VaadinLoginViewLogicTest {
 
 	@Test(expected = NullPointerException.class)
 	public void cannotCreateWithoutViewInstance() {
-		new VaadinLoginViewLogic(null);
+		new VaadinLoginViewLogic(null, null);
 	}
 
 	@Test
@@ -108,7 +111,9 @@ public class VaadinLoginViewLogicTest {
 
 		this.userIdFieldChangeListener.textChange(textChangeEventMock);
 
-		Mockito.verify(this.presenterMock).onUserIdChange(currentUserIdValue);
+		ArgumentCaptor<UserIdChangeEvent> captor = ArgumentCaptor.forClass(UserIdChangeEvent.class);
+		Mockito.verify(this.eventBusMock).post(captor.capture());
+		assertEquals(currentUserIdValue, captor.getValue().getCurrentUserId());
 	}
 
 	@Test
@@ -119,7 +124,9 @@ public class VaadinLoginViewLogicTest {
 
 		this.passwordFieldChangeListener.textChange(textChangeEventMock);
 
-		Mockito.verify(this.presenterMock).onPasswordChange(currentPasswordValue);
+		ArgumentCaptor<PasswordChangeEvent> captor = ArgumentCaptor.forClass(PasswordChangeEvent.class);
+		Mockito.verify(this.eventBusMock).post(captor.capture());
+		assertEquals(currentPasswordValue, captor.getValue().getCurrentPassword());
 	}
 
 	@Test
@@ -132,7 +139,7 @@ public class VaadinLoginViewLogicTest {
 
 		this.loginButtonClickListener.buttonClick(new ClickEvent(Mockito.mock(Component.class)));
 
-		Mockito.verify(this.presenterMock).onLogin();
+		Mockito.verify(this.eventBusMock).post(Mockito.any(LoginAttemptEvent.class));
 	}
 
 	@Test(expected = UnsupportedViewTypeException.class)

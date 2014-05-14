@@ -1,5 +1,6 @@
 package de.vaadinbuch.mvxdemo.login.impl.view;
 
+import com.google.common.eventbus.EventBus;
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
 import com.vaadin.ui.Button.ClickEvent;
@@ -7,6 +8,9 @@ import com.vaadin.ui.Button.ClickListener;
 
 import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
 import de.vaadinbuch.mvxdemo.login.LoginView;
+import de.vaadinbuch.mvxdemo.login.impl.event.LoginAttemptEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.PasswordChangeEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
 
 /**
  * Die Implementierung der Oberflächenlogik.<br/>
@@ -23,20 +27,25 @@ import de.vaadinbuch.mvxdemo.login.LoginView;
 public class VaadinLoginViewLogic implements LoginView {
 
 	private final VaadinLoginView view;
-
-	private LoginView.Presenter presenter;
+	private final EventBus eventBus;
 
 	/**
 	 * Erzeugt eine neuen Instanz dieser Logik.
 	 * 
 	 * @param view
 	 *            die Instanz der Oberfläche.
+	 * @param eventBus
+	 *            der Eventbus.
 	 */
-	public VaadinLoginViewLogic(VaadinLoginView view) {
+	public VaadinLoginViewLogic(VaadinLoginView view, EventBus eventBus) {
 		if (view == null) {
-			throw new NullPointerException("Undefined view!");
+			throw new NullPointerException("Undefinierte View!");
 		}
 		this.view = view;
+		if (eventBus == null) {
+			throw new NullPointerException("Undefinierter Eventbus!");
+		}
+		this.eventBus = eventBus;
 
 		this.registerViewListeners();
 
@@ -66,11 +75,6 @@ public class VaadinLoginViewLogic implements LoginView {
 		this.view.getLoginButton().setEnabled(false);
 	}
 
-	@Override
-	public void setPresenter(LoginView.Presenter presenter) {
-		this.presenter = presenter;
-	}
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T getViewAs(Class<T> type) throws UnsupportedViewTypeException {
@@ -85,32 +89,20 @@ public class VaadinLoginViewLogic implements LoginView {
 		this.view.getUserIdField().addTextChangeListener(new TextChangeListener() {
 			@Override
 			public void textChange(TextChangeEvent event) {
-				onUserIdFieldChanges(event);
+				eventBus.post(new UserIdChangeEvent(VaadinLoginViewLogic.this, event.getText()));
 			}
 		});
 		this.view.getPasswordField().addTextChangeListener(new TextChangeListener() {
 			@Override
 			public void textChange(TextChangeEvent event) {
-				onPasswordFieldChanges(event);
+				eventBus.post(new PasswordChangeEvent(VaadinLoginViewLogic.this, event.getText()));
 			}
 		});
 		this.view.getLoginButton().addClickListener(new ClickListener() {
 			@Override
 			public void buttonClick(ClickEvent event) {
-				onLoginButtonClicked(event);
+				eventBus.post(new LoginAttemptEvent(VaadinLoginViewLogic.this));
 			}
 		});
-	}
-
-	private void onUserIdFieldChanges(TextChangeEvent event) {
-		this.presenter.onUserIdChange(event.getText());
-	}
-
-	private void onPasswordFieldChanges(TextChangeEvent event) {
-		this.presenter.onPasswordChange(event.getText());
-	}
-
-	private void onLoginButtonClicked(ClickEvent event) {
-		this.presenter.onLogin();
 	}
 }

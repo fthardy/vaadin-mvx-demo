@@ -6,16 +6,22 @@ import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.google.common.eventbus.EventBus;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.VerticalLayout;
 
-import de.vaadinbuch.mvxdemo.login.LoginComponent;
 import de.vaadinbuch.mvxdemo.login.LoginModel;
 import de.vaadinbuch.mvxdemo.login.LoginView;
+import de.vaadinbuch.mvxdemo.login.event.LoginFailedEvent;
+import de.vaadinbuch.mvxdemo.login.event.LoginSuccessEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.LoginAttemptEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.PasswordChangeEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
 
 @RunWith(value = MockitoJUnitRunner.class)
 public class LoginComponentImplTest {
@@ -27,35 +33,21 @@ public class LoginComponentImplTest {
 	@Mock
 	private LoginModel modelMock;
 	@Mock
-	private LoginComponent.LoginSuccessHandler successHandlerMock1;
-	@Mock
-	private LoginComponent.LoginSuccessHandler successHandlerMock2;
-	@Mock
-	private LoginComponent.LoginFailedHandler failedHandlerMock1;
-	@Mock
-	private LoginComponent.LoginFailedHandler failedHandlerMock2;
+	private EventBus eventBusMock;
 
 	@Before
 	public void setup() {
 		Mockito.when(this.modelMock.getMinUserIdLength()).thenReturn(5);
 		Mockito.when(this.modelMock.getMinPasswordLength()).thenReturn(8);
 
-		this.loginComponent = new LoginComponentImpl(this.modelMock, this.viewMock);
-		this.loginComponent.addLoginSuccessHandler(this.successHandlerMock1);
-		this.loginComponent.addLoginSuccessHandler(this.successHandlerMock2);
-		this.loginComponent.addLoginSuccessHandler(this.successHandlerMock2);
-		this.loginComponent.addLoginFailedHandler(this.failedHandlerMock1);
-		this.loginComponent.addLoginFailedHandler(this.failedHandlerMock1);
-		this.loginComponent.addLoginFailedHandler(this.failedHandlerMock2);
-
-		Mockito.verify(this.viewMock).setPresenter(this.loginComponent);
+		this.loginComponent = new LoginComponentImpl(this.modelMock, this.viewMock, this.eventBusMock);
 	}
 
 	@Test
 	public void shouldDisableLoginButtonWhenUserIdIsBelowMinLength() {
 		Mockito.when(this.viewMock.getPassword()).thenReturn("12345678");
 
-		this.loginComponent.onUserIdChange("1234");
+		this.loginComponent.onUserIdChange(new UserIdChangeEvent(this.viewMock, "1234"));
 
 		Mockito.verify(this.viewMock).setLoginButtonEnabled(false);
 	}
@@ -64,7 +56,7 @@ public class LoginComponentImplTest {
 	public void shouldDisableLoginButtonWhenPasswordIsBelowMinLength() {
 		Mockito.when(this.viewMock.getUserId()).thenReturn("12345");
 
-		this.loginComponent.onPasswordChange("1234567");
+		this.loginComponent.onPasswordChange(new PasswordChangeEvent(this.viewMock, "1234567"));
 
 		Mockito.verify(this.viewMock).setLoginButtonEnabled(false);
 	}
@@ -73,7 +65,7 @@ public class LoginComponentImplTest {
 	public void shouldEnableLoginButtonWhenUserIdAndPasswordHaveAtLeastMinLength() {
 		Mockito.when(this.viewMock.getUserId()).thenReturn("12345");
 
-		this.loginComponent.onPasswordChange("12345678");
+		this.loginComponent.onPasswordChange(new PasswordChangeEvent(this.viewMock, "12345678"));
 
 		Mockito.verify(this.viewMock).setLoginButtonEnabled(true);
 	}
@@ -87,10 +79,12 @@ public class LoginComponentImplTest {
 		Mockito.when(this.viewMock.getPassword()).thenReturn(password);
 		Mockito.when(this.modelMock.loginUser(userId, password)).thenReturn(true);
 
-		this.loginComponent.onLogin();
+		this.loginComponent.onLogin(new LoginAttemptEvent(this.viewMock));
 
-		Mockito.verify(this.successHandlerMock1).onLoginSuccess(userId);
-		Mockito.verify(this.successHandlerMock2).onLoginSuccess(userId);
+		ArgumentCaptor<LoginSuccessEvent> captor = ArgumentCaptor.forClass(LoginSuccessEvent.class);
+		Mockito.verify(this.eventBusMock).post(captor.capture());
+
+		assertEquals(userId, captor.getValue().getUserId());
 	}
 
 	@Test
@@ -102,10 +96,9 @@ public class LoginComponentImplTest {
 		Mockito.when(this.viewMock.getPassword()).thenReturn(password);
 		Mockito.when(this.modelMock.loginUser(userId, password)).thenReturn(false);
 
-		this.loginComponent.onLogin();
+		this.loginComponent.onLogin(new LoginAttemptEvent(this.viewMock));
 
-		Mockito.verify(this.failedHandlerMock1).onLoginFailed();
-		Mockito.verify(this.failedHandlerMock2).onLoginFailed();
+		Mockito.verify(this.eventBusMock).post(Mockito.any(LoginFailedEvent.class));
 		Mockito.verify(this.viewMock).reset();
 	}
 
