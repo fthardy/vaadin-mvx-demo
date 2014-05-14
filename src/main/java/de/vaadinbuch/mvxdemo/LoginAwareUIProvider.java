@@ -1,6 +1,6 @@
 package de.vaadinbuch.mvxdemo;
 
-import com.vaadin.server.DefaultUIProvider;
+import com.vaadin.cdi.CDIUIProvider;
 import com.vaadin.server.UIClassSelectionEvent;
 import com.vaadin.server.UIProvider;
 import com.vaadin.server.VaadinSession;
@@ -14,7 +14,7 @@ import com.vaadin.ui.UI;
  * 
  * @author Frank Hardy
  */
-public class LoginAwareUIProvider extends DefaultUIProvider {
+public class LoginAwareUIProvider extends CDIUIProvider {
 
 	private static final long serialVersionUID = 1L;
 

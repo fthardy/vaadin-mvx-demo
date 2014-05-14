@@ -1,6 +1,7 @@
 package de.vaadinbuch.mvxdemo;
 
 import com.vaadin.annotations.Theme;
+import com.vaadin.cdi.CDIUI;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -16,6 +17,7 @@ import com.vaadin.ui.VerticalLayout;
  * 
  * @author Frank Hardy
  */
+@CDIUI("main")
 @Theme("mvx-demo")
 @SuppressWarnings("serial")
 public class MainUI extends UI {

@@ -1,6 +1,8 @@
 package de.vaadinbuch.mvxdemo.login.impl.view;
 
-import com.google.common.eventbus.EventBus;
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
+
 import com.vaadin.event.FieldEvents.TextChangeEvent;
 import com.vaadin.event.FieldEvents.TextChangeListener;
 import com.vaadin.ui.Button.ClickEvent;
@@ -27,28 +29,28 @@ import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
 public class VaadinLoginViewLogic implements LoginView {
 
 	private final VaadinLoginView view;
-	private final EventBus eventBus;
+
+	@Inject
+	Event<UserIdChangeEvent> userIdChangedEventSink;
+	@Inject
+	Event<PasswordChangeEvent> passwordChangeEventSink;
+	@Inject
+	Event<LoginAttemptEvent> loginAttemptEventSink;
 
 	/**
 	 * Erzeugt eine neuen Instanz dieser Logik.
 	 * 
 	 * @param view
 	 *            die Instanz der Oberfläche.
-	 * @param eventBus
-	 *            der Eventbus.
 	 */
-	public VaadinLoginViewLogic(VaadinLoginView view, EventBus eventBus) {
+	@Inject
+	public VaadinLoginViewLogic(VaadinLoginView view) {
 		if (view == null) {
 			throw new NullPointerException("Undefinierte View!");
 		}
 		this.view = view;
-		if (eventBus == null) {
-			throw new NullPointerException("Undefinierter Eventbus!");
-		}
-		this.eventBus = eventBus;
 
 		this.registerViewListeners();
-
 		this.reset();
 	}
 
@@ -89,19 +91,20 @@ public class VaadinLoginViewLogic implements LoginView {
 		this.view.getUserIdField().addTextChangeListener(new TextChangeListener() {
 			@Override
 			public void textChange(TextChangeEvent event) {
-				eventBus.post(new UserIdChangeEvent(VaadinLoginViewLogic.this, event.getText()));
+				userIdChangedEventSink.fire(new UserIdChangeEvent(VaadinLoginViewLogic.this, event.getText()));
+
 			}
 		});
 		this.view.getPasswordField().addTextChangeListener(new TextChangeListener() {
 			@Override
 			public void textChange(TextChangeEvent event) {
-				eventBus.post(new PasswordChangeEvent(VaadinLoginViewLogic.this, event.getText()));
+				passwordChangeEventSink.fire(new PasswordChangeEvent(VaadinLoginViewLogic.this, event.getText()));
 			}
 		});
 		this.view.getLoginButton().addClickListener(new ClickListener() {
 			@Override
 			public void buttonClick(ClickEvent event) {
-				eventBus.post(new LoginAttemptEvent(VaadinLoginViewLogic.this));
+				loginAttemptEventSink.fire(new LoginAttemptEvent(VaadinLoginViewLogic.this));
 			}
 		});
 	}

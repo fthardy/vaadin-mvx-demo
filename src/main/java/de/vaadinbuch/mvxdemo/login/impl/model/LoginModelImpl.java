@@ -1,5 +1,7 @@
 package de.vaadinbuch.mvxdemo.login.impl.model;
 
+import javax.inject.Inject;
+
 import de.vaadinbuch.mvxdemo.domain.UserService;
 import de.vaadinbuch.mvxdemo.login.LoginModel;
 
@@ -19,6 +21,7 @@ public class LoginModelImpl implements LoginModel {
 	 *            die Instanz des Service aus der Domäne für den Zugriff auf die
 	 *            Benutzer.
 	 */
+	@Inject
 	public LoginModelImpl(UserService userService) {
 		if (userService == null) {
 			throw new NullPointerException("Undefinierter UserService!");

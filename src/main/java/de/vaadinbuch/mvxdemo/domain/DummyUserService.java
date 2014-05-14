@@ -6,11 +6,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.enterprise.context.ApplicationScoped;
+
 /**
  * Dummyimplementierung des {@link UserService}.
  * 
  * @author Frank Hardy
  */
+@ApplicationScoped
 public class DummyUserService implements UserService {
 
 	private final Map<String, User> userMap = new HashMap<String, User>();

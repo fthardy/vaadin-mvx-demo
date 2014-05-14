@@ -3,15 +3,15 @@ package de.vaadinbuch.mvxdemo.login.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import javax.enterprise.event.Event;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.google.common.eventbus.EventBus;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.VerticalLayout;
 
@@ -33,14 +33,18 @@ public class LoginComponentImplTest {
 	@Mock
 	private LoginModel modelMock;
 	@Mock
-	private EventBus eventBusMock;
+	private Event<LoginSuccessEvent> loginSuccessEventSinkMock;
+	@Mock
+	private Event<LoginFailedEvent> loginFailedEventSinkMock;
 
 	@Before
 	public void setup() {
 		Mockito.when(this.modelMock.getMinUserIdLength()).thenReturn(5);
 		Mockito.when(this.modelMock.getMinPasswordLength()).thenReturn(8);
 
-		this.loginComponent = new LoginComponentImpl(this.modelMock, this.viewMock, this.eventBusMock);
+		this.loginComponent = new LoginComponentImpl(this.modelMock, this.viewMock);
+		this.loginComponent.loginSuccessEventSink = this.loginSuccessEventSinkMock;
+		this.loginComponent.loginFailedEventSink = this.loginFailedEventSinkMock;
 	}
 
 	@Test
@@ -81,10 +85,7 @@ public class LoginComponentImplTest {
 
 		this.loginComponent.onLogin(new LoginAttemptEvent(this.viewMock));
 
-		ArgumentCaptor<LoginSuccessEvent> captor = ArgumentCaptor.forClass(LoginSuccessEvent.class);
-		Mockito.verify(this.eventBusMock).post(captor.capture());
-
-		assertEquals(userId, captor.getValue().getUserId());
+		Mockito.verify(this.loginSuccessEventSinkMock).fire(Mockito.any(LoginSuccessEvent.class));
 	}
 
 	@Test
@@ -98,7 +99,7 @@ public class LoginComponentImplTest {
 
 		this.loginComponent.onLogin(new LoginAttemptEvent(this.viewMock));
 
-		Mockito.verify(this.eventBusMock).post(Mockito.any(LoginFailedEvent.class));
+		Mockito.verify(this.loginFailedEventSinkMock).fire(Mockito.any(LoginFailedEvent.class));
 		Mockito.verify(this.viewMock).reset();
 	}
 
