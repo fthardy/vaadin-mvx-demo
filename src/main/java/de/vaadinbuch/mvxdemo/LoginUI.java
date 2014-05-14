@@ -37,7 +37,7 @@ public class LoginUI extends UI {
 	 */
 	public static final String LOGIN_USER_ID = "LOGIN_USER_ID";
 
-	protected final EventBus eventBus = new EventBus();
+	private final EventBus eventBus = new EventBus();
 
 	@Override
 	protected void init(VaadinRequest request) {
