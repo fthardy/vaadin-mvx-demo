@@ -13,7 +13,7 @@ import com.vaadin.ui.Notification.Type;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 
-import de.vaadinbuch.mvxdemo.login.LoginComponent;
+import de.vaadinbuch.mvxdemo.login.LoginView;
 import de.vaadinbuch.mvxdemo.login.event.LoginFailedEvent;
 import de.vaadinbuch.mvxdemo.login.event.LoginSuccessEvent;
 
@@ -29,7 +29,7 @@ import de.vaadinbuch.mvxdemo.login.event.LoginSuccessEvent;
 public class LoginUI extends UI {
 
 	@Inject
-	private LoginComponent loginComponent;
+	private LoginView loginView;
 
 	/**
 	 * Der Schlüssel für das Session-Attribut, das die Benutzerkennung
@@ -48,7 +48,7 @@ public class LoginUI extends UI {
 
 	@Override
 	protected void init(VaadinRequest request) {
-		Component loginView = this.loginComponent.getViewAs(Component.class);
+		Component loginView = this.loginView.getViewAs(Component.class);
 		VerticalLayout layout = new VerticalLayout();
 		layout.addComponent(loginView);
 		layout.setComponentAlignment(loginView, Alignment.MIDDLE_CENTER);

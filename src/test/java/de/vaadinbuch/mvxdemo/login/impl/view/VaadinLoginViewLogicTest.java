@@ -1,10 +1,6 @@
 package de.vaadinbuch.mvxdemo.login.impl.view;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-
-import javax.enterprise.event.Event;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,9 +21,9 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
 
 import de.vaadinbuch.mvxdemo.UnsupportedViewTypeException;
-import de.vaadinbuch.mvxdemo.login.impl.event.LoginAttemptEvent;
-import de.vaadinbuch.mvxdemo.login.impl.event.PasswordChangeEvent;
-import de.vaadinbuch.mvxdemo.login.impl.event.UserIdChangeEvent;
+import de.vaadinbuch.mvxdemo.login.LoginPresentationModel;
+import de.vaadinbuch.mvxdemo.login.impl.event.LoginEnabledChangedEvent;
+import de.vaadinbuch.mvxdemo.login.impl.event.ResetLoginViewEvent;
 
 @RunWith(value = MockitoJUnitRunner.class)
 public class VaadinLoginViewLogicTest {
@@ -35,17 +31,11 @@ public class VaadinLoginViewLogicTest {
 	@Mock
 	private VaadinLoginView viewMock;
 	@Mock
-	private TextField userIdFieldMock;
-	@Mock
-	private PasswordField passwordFieldMock;
-	@Mock
-	private Button loginButtonMock;
-	@Mock
-	Event<UserIdChangeEvent> userIdChangedEventSinkMock;
-	@Mock
-	Event<PasswordChangeEvent> passwordChangeEventSinkMock;
-	@Mock
-	Event<LoginAttemptEvent> loginAttemptEventSinkMock;
+	private LoginPresentationModel presentationModelMock;
+
+	private TextField userIdFieldMock = Mockito.spy(new TextField());
+	private PasswordField passwordFieldMock = Mockito.spy(new PasswordField());
+	private Button loginButtonMock = Mockito.spy(new Button());
 
 	private VaadinLoginViewLogic viewLogic;
 
@@ -53,17 +43,18 @@ public class VaadinLoginViewLogicTest {
 	private TextChangeListener passwordFieldChangeListener;
 	private ClickListener loginButtonClickListener;
 
+	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() {
+		Mockito.when(this.presentationModelMock.getUserId()).thenReturn("");
+		Mockito.when(this.presentationModelMock.getPassword()).thenReturn("");
+		Mockito.when(this.presentationModelMock.isLoginEnabled()).thenReturn(false);
 
 		Mockito.when(this.viewMock.getUserIdField()).thenReturn(this.userIdFieldMock);
 		Mockito.when(this.viewMock.getPasswordField()).thenReturn(this.passwordFieldMock);
 		Mockito.when(this.viewMock.getLoginButton()).thenReturn(this.loginButtonMock);
 
-		this.viewLogic = new VaadinLoginViewLogic(this.viewMock);
-		this.viewLogic.loginAttemptEventSink = this.loginAttemptEventSinkMock;
-		this.viewLogic.userIdChangedEventSink = this.userIdChangedEventSinkMock;
-		this.viewLogic.passwordChangeEventSink = this.passwordChangeEventSinkMock;
+		this.viewLogic = new VaadinLoginViewLogic(this.viewMock, this.presentationModelMock);
 
 		ArgumentCaptor<TextChangeListener> userIdTclCaptor = ArgumentCaptor.forClass(TextChangeListener.class);
 		Mockito.verify(this.userIdFieldMock).addTextChangeListener(userIdTclCaptor.capture());
@@ -81,34 +72,40 @@ public class VaadinLoginViewLogicTest {
 		Mockito.verify(this.userIdFieldMock).focus();
 		Mockito.verify(this.passwordFieldMock).setValue("");
 		Mockito.verify(this.loginButtonMock).setEnabled(false);
+
+		Mockito.reset(this.userIdFieldMock, this.passwordFieldMock, this.loginButtonMock);
 	}
 
 	@Test
-	public void test_getUserId() {
-		String testUserId = "admin";
-		Mockito.when(this.userIdFieldMock.getValue()).thenReturn(testUserId);
+	public void shouldNotResetViewOnResetEventFromDifferentPresentationModel() {
+		this.viewLogic.onReset(new ResetLoginViewEvent(Mockito.mock(LoginPresentationModel.class)));
 
-		assertSame(testUserId, this.viewLogic.getUserId());
+		Mockito.verify(this.userIdFieldMock, Mockito.never()).setValue("");
+		Mockito.verify(this.userIdFieldMock, Mockito.never()).focus();
+		Mockito.verify(this.passwordFieldMock, Mockito.never()).setValue("");
+		Mockito.verify(this.loginButtonMock, Mockito.never()).setEnabled(false);
 	}
 
 	@Test
-	public void test_getPassword() {
-		String testPassword = "secret";
-		Mockito.when(this.passwordFieldMock.getValue()).thenReturn(testPassword);
+	public void shouldResetViewWhenReceiveResetEvent() {
+		this.viewLogic.onReset(new ResetLoginViewEvent(this.presentationModelMock));
 
-		assertSame(testPassword, this.viewLogic.getPassword());
+		Mockito.verify(this.userIdFieldMock).setValue("");
+		Mockito.verify(this.userIdFieldMock).focus();
+		Mockito.verify(this.passwordFieldMock).setValue("");
+		Mockito.verify(this.loginButtonMock).setEnabled(false);
 	}
 
 	@Test
-	public void test_setLoginButtonEnabled() {
-		this.viewLogic.setLoginButtonEnabled(true);
-
-		Mockito.verify(this.loginButtonMock).setEnabled(true);
+	public void shouldNotSetLoginButtonEnabledStateOnChangeEventFromDifferentPresentationModel() {
+		this.viewLogic.onLoginEnabledChanged(new LoginEnabledChangedEvent(Mockito.mock(LoginPresentationModel.class)));
+		Mockito.verify(this.loginButtonMock, Mockito.never()).setEnabled(false);
 	}
 
-	@Test(expected = NullPointerException.class)
-	public void cannotCreateWithoutViewInstance() {
-		new VaadinLoginViewLogic(null);
+	@Test
+	public void shouldSetLoginButtonEnabledStateOnChangeEvent() {
+		this.viewLogic.onLoginEnabledChanged(new LoginEnabledChangedEvent(this.presentationModelMock));
+		Mockito.verify(this.loginButtonMock).setEnabled(false);
 	}
 
 	@Test
@@ -118,10 +115,7 @@ public class VaadinLoginViewLogicTest {
 		Mockito.when(textChangeEventMock.getText()).thenReturn(currentUserIdValue);
 
 		this.userIdFieldChangeListener.textChange(textChangeEventMock);
-
-		ArgumentCaptor<UserIdChangeEvent> captor = ArgumentCaptor.forClass(UserIdChangeEvent.class);
-		Mockito.verify(this.userIdChangedEventSinkMock).fire(captor.capture());
-		assertEquals(currentUserIdValue, captor.getValue().getCurrentUserId());
+		Mockito.verify(this.presentationModelMock).onUserIdChange(currentUserIdValue);
 	}
 
 	@Test
@@ -131,23 +125,13 @@ public class VaadinLoginViewLogicTest {
 		Mockito.when(textChangeEventMock.getText()).thenReturn(currentPasswordValue);
 
 		this.passwordFieldChangeListener.textChange(textChangeEventMock);
-
-		ArgumentCaptor<PasswordChangeEvent> captor = ArgumentCaptor.forClass(PasswordChangeEvent.class);
-		Mockito.verify(this.passwordChangeEventSinkMock).fire(captor.capture());
-		assertEquals(currentPasswordValue, captor.getValue().getCurrentPassword());
+		Mockito.verify(this.presentationModelMock).onPasswordChange(currentPasswordValue);
 	}
 
 	@Test
 	public void shouldDelegateLoginButtonClickToPresenter() {
-		String userId = "admin";
-		String password = "secret";
-
-		Mockito.when(userIdFieldMock.getValue()).thenReturn(userId);
-		Mockito.when(passwordFieldMock.getValue()).thenReturn(password);
-
 		this.loginButtonClickListener.buttonClick(new ClickEvent(Mockito.mock(Component.class)));
-
-		Mockito.verify(this.loginAttemptEventSinkMock).fire(Mockito.any(LoginAttemptEvent.class));
+		Mockito.verify(this.presentationModelMock).onLogin();
 	}
 
 	@Test(expected = UnsupportedViewTypeException.class)

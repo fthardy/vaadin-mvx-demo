@@ -10,23 +10,7 @@ import de.vaadinbuch.mvxdemo.ViewAccessor;
 public interface LoginView extends ViewAccessor {
 
 	/**
-	 * @return die eingegebene Benutzerkennung.
+	 * @return die Anmeldekomponente.
 	 */
-	String getUserId();
-
-	/**
-	 * @return das eingegebene Passwort.
-	 */
-	String getPassword();
-
-	/**
-	 * @param enabled
-	 *            setzt den Aktivierungszustand des Anmeldebuttons.
-	 */
-	void setLoginButtonEnabled(boolean enabled);
-
-	/**
-	 * Setzt die View auf den Initialzustand zurück.
-	 */
-	void reset();
+	LoginComponent getComponent();
 }
